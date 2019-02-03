@@ -1,15 +1,16 @@
+#define GLEW_STATIC
+
 #include <GL/glew.h>
 #include <Windows.h>
 #include <sstream>
 
-bool gameOn = true;
+bool GameOn;
 
 // Prints the latest system error to the console output screen in debug mode
-bool PrintSystemError()
+bool PrintSystemError(DWORD error)
 {
-	DWORD error = GetLastError();
 	std::ostringstream oss;
-	oss << "System Error: " << GetLastError();
+	oss << "System Error: " << error;
 	OutputDebugString(oss.str().c_str());
 
 	return false;
@@ -18,8 +19,20 @@ bool PrintSystemError()
 // Creates a default windowprocedure
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	LRESULT result = 0;
+
 	switch (msg)
 	{
+		case WM_CREATE:
+		{
+			GameOn = true;
+		} break;
+
+		case WM_CLOSE:
+		{
+			GameOn = false;
+		} break;
+
 		case WM_KEYDOWN:
 		{
 			switch (wParam)
@@ -27,21 +40,23 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 				case VK_ESCAPE:
 				{
 					// Process escape key
-					gameOn = false;
+					GameOn = false;
 				} break;
 			}
 		} break;
+
 		case WM_LBUTTONDOWN:
 		{
 			OutputDebugString("Works!");
 		} break;
+
 		default:
 		{
-			return (DefWindowProc(hWnd, msg, wParam, lParam));
+			result = DefWindowProc(hWnd, msg, wParam, lParam);
 		} break;
 	}
 	
-	return 0;
+	return result;
 }
 
 // Checks for OpenGL function pointer using wglGetProcAddress, and if not found checks for the function using Win32's GetProcAddress
@@ -80,7 +95,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	WindowsClass.hbrBackground = (HBRUSH)LTGRAY_BRUSH;
 
 	if (!RegisterClassEx(&WindowsClass))
-		return PrintSystemError();
+		return PrintSystemError(GetLastError());
 
 	// Create window handle
 	HWND hwndMain = CreateWindowEx(
@@ -96,11 +111,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		(HMENU)NULL,
 		hInstance,
 		NULL
-
 	);
 
 	if (!hwndMain)
-		return PrintSystemError();
+		return PrintSystemError(GetLastError());
 
 	// Device Context Handle
 	hdc = GetDC(hwndMain);
@@ -116,13 +130,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	pfd.cStencilBits = 8;
 	pfd.bReserved = PFD_MAIN_PLANE;
 
-
 	pixelFormatNumber = ChoosePixelFormat(hdc, &pfd);
 	if (!pixelFormatNumber)
-		return PrintSystemError();
+		return PrintSystemError(GetLastError());
 
 	if (!SetPixelFormat(hdc, pixelFormatNumber, &pfd))
-		return PrintSystemError();
+		return PrintSystemError(GetLastError());
 
 	// Creates rendering context with the device context handle
 	HGLRC renderingContext = wglCreateContext(hdc);
@@ -130,10 +143,18 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	// Make the device context current
 	wglMakeCurrent(hdc, renderingContext);
 
-	while (gameOn)
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
 	{
+		return PrintSystemError(err);
+		return false;
+	}
+
+	while (GameOn)
+	{
+		// Handle events. Dispatches message to window procedure
 		MSG message;
-		bool msgResult = GetMessage(&message, 0, 0, 0);
+		BOOL msgResult = GetMessage(&message, 0, 0, 0);
 		{
 			if (msgResult > 0)
 			{
@@ -144,4 +165,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		ShowWindow(hwndMain, SW_SHOWDEFAULT);
 		UpdateWindow(hwndMain);
 	}
+
+	return 0;
 }
