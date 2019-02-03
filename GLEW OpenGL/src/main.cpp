@@ -1,10 +1,18 @@
 #define GLEW_STATIC
 
 #include <GL/glew.h>
+#include <GL/wglew.h>
 #include <Windows.h>
 #include <sstream>
 
 bool GameOn;
+
+// An array of 3 vectors which represents 3 vertices
+static const GLfloat g_vertex_buffer_data[] = {
+   -1.0f, -1.0f, 0.0f,
+   1.0f, -1.0f, 0.0f,
+   0.0f,  1.0f, 0.0f,
+};
 
 // Prints the latest system error to the console output screen in debug mode
 bool PrintSystemError(DWORD error)
@@ -58,26 +66,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 	
 	return result;
 }
-
-// Checks for OpenGL function pointer using wglGetProcAddress, and if not found checks for the function using Win32's GetProcAddress
-// wglGetProcAddress is responsible for retrieving modern opengl functions. Any older functions that need to be accessed can be done using GetProcAddress
-void *GetAnyGLFuncAddress(const char *name)
-{
-	void *functionPointer = (void *)wglGetProcAddress(name);
-	if ((functionPointer == 0) ||
-		(functionPointer == (void*)0x1) ||
-		(functionPointer == (void*)0x2) ||
-		(functionPointer == (void*)0x3) ||
-		(functionPointer == (void*)-1))
-	{
-		HMODULE module = LoadLibraryA("opengl32.dll");
-		functionPointer = (void *)GetProcAddress(module, name);
-	}
-
-	return functionPointer;
-}
-
-//LRESULT CALLBACK 
 
 // Windows main entry point
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -137,11 +125,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if (!SetPixelFormat(hdc, pixelFormatNumber, &pfd))
 		return PrintSystemError(GetLastError());
 
-	// Creates rendering context with the device context handle
-	HGLRC renderingContext = wglCreateContext(hdc);
+	// Creates temporary rendering context with the device context handle to access openGL functions
+	HGLRC tempContext = wglCreateContext(hdc);
 
 	// Make the device context current
-	wglMakeCurrent(hdc, renderingContext);
+	wglMakeCurrent(hdc, tempContext);
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -155,6 +143,36 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		OutputDebugString("OpenGL 4.6 supported!");
 	}
 
+	const int pixelFormatAttribList[] =
+	{
+		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB, 32,
+		WGL_DEPTH_BITS_ARB, 24,
+		WGL_STENCIL_BITS_ARB, 8,
+		0
+	};
+
+	int pixelFormat;
+	UINT numFormats;
+
+	wglChoosePixelFormatARB(hdc, pixelFormatAttribList, NULL, 1, &pixelFormat, &numFormats);
+
+	const int contextAttribList[] = 
+	{
+		WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+		WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+		WGL_CONTEXT_FLAGS_ARB,
+		0
+	};
+
+	HGLRC wglRenderingContext = wglCreateContextAttribsARB(hdc, 0, contextAttribList);
+	wglMakeCurrent(NULL, NULL);
+	wglDeleteContext(tempContext);
+	wglMakeCurrent(hdc, wglRenderingContext);
+
 	while (GameOn)
 	{
 		// Handle events. Dispatches message to window procedure
@@ -167,6 +185,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				DispatchMessage(&message);
 			}
 		}
+
 		ShowWindow(hwndMain, SW_SHOWDEFAULT);
 		UpdateWindow(hwndMain);
 	}
