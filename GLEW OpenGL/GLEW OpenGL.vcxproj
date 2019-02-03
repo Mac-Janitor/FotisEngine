@@ -78,6 +78,7 @@
     <OutDir>$(SolutionDir)bin\exe\$(Platform)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)$(Configuration)\</IntDir>
     <IncludePath>$(SolutionDir)Dependencies\glew-2.1.0\include\;$(IncludePath)</IncludePath>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\exe\$(Platform)$(Configuration)\</OutDir>
@@ -88,6 +89,7 @@
     <OutDir>$(SolutionDir)bin\exe\$(Platform)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)$(Configuration)\</IntDir>
     <IncludePath>$(SolutionDir)Dependencies\glew-2.1.0\include\;$(IncludePath)</IncludePath>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

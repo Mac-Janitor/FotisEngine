@@ -150,6 +150,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		return false;
 	}
 
+	if (GLEW_VERSION_4_6)
+	{
+		OutputDebugString("OpenGL 4.6 supported!");
+	}
+
 	while (GameOn)
 	{
 		// Handle events. Dispatches message to window procedure
