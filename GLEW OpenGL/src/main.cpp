@@ -2,6 +2,8 @@
 #include <Windows.h>
 #include <sstream>
 
+bool gameOn = true;
+
 // Prints the latest system error to the console output screen in debug mode
 bool PrintSystemError()
 {
@@ -14,9 +16,32 @@ bool PrintSystemError()
 }
 
 // Creates a default windowprocedure
-LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	return (DefWindowProc(hWnd, Msg, wParam, lParam));
+	switch (msg)
+	{
+		case WM_KEYDOWN:
+		{
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+				{
+					// Process escape key
+					gameOn = false;
+				} break;
+			}
+		} break;
+		case WM_LBUTTONDOWN:
+		{
+			OutputDebugString("Works!");
+		} break;
+		default:
+		{
+			return (DefWindowProc(hWnd, msg, wParam, lParam));
+		} break;
+	}
+	
+	return 0;
 }
 
 // Checks for OpenGL function pointer using wglGetProcAddress, and if not found checks for the function using Win32's GetProcAddress
@@ -36,6 +61,8 @@ void *GetAnyGLFuncAddress(const char *name)
 
 	return functionPointer;
 }
+
+//LRESULT CALLBACK 
 
 // Windows main entry point
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -103,8 +130,17 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	// Make the device context current
 	wglMakeCurrent(hdc, renderingContext);
 
-	while (true)
+	while (gameOn)
 	{
+		MSG message;
+		bool msgResult = GetMessage(&message, 0, 0, 0);
+		{
+			if (msgResult > 0)
+			{
+				TranslateMessage(&message);
+				DispatchMessage(&message);
+			}
+		}
 		ShowWindow(hwndMain, SW_SHOWDEFAULT);
 		UpdateWindow(hwndMain);
 	}
